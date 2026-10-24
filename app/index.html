@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apple Music Horizon 6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --fond: #0a0a12;
+  --carte: rgba(255, 255, 255, .045);
+  --bord: rgba(255, 255, 255, .09);
+  --texte: #f3f2f8;
+  --doux: #9d9bb4;
+  --rose: #ff2d87;
+  --cyan: #2ad4ff;
+  --vert: #3ee08f;
+  --ambre: #ffb53d;
+  --rouge: #ff5468;
+  --chiffres: "Saira", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font: 15px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  color: var(--texte);
+  background:
+    radial-gradient(900px 520px at 88% -12%, rgba(255, 45, 135, .22), transparent 62%),
+    radial-gradient(760px 520px at -12% 112%, rgba(42, 212, 255, .14), transparent 62%),
+    var(--fond);
+  background-attachment: fixed;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 28px 24px 40px; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+h1 { margin: 0; font: 800 30px/1 var(--chiffres); letter-spacing: .02em; text-transform: uppercase; }
+h1 span { background: linear-gradient(90deg, var(--cyan), var(--rose)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sous { margin: 6px 0 0; color: var(--doux); font-size: 14px; }
+.pastilles { display: flex; gap: 10px; flex-wrap: wrap; }
+.pastille {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px;
+  background: var(--carte); border: 1px solid var(--bord);
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.pastille i { width: 8px; height: 8px; border-radius: 50%; background: var(--doux); }
+.pastille.ok i { background: var(--vert); box-shadow: 0 0 10px var(--vert); }
+.pastille.attente i { background: var(--ambre); }
+.pastille.ko i { background: var(--rouge); box-shadow: 0 0 10px var(--rouge); }
+
+.grille { display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; }
+.carte {
+  background: var(--carte); border: 1px solid var(--bord); border-radius: 20px;
+  padding: 20px; backdrop-filter: blur(8px);
+}
+h2 { margin: 0 0 14px; font: 700 13px/1 var(--chiffres); letter-spacing: .14em; text-transform: uppercase; color: var(--doux); }
+
+/* Jauge */
+.jauge-carte { position: relative; display: grid; place-items: center; padding: 14px 14px 18px; }
+.jauge { width: 100%; max-width: 260px; display: block; }
+.jauge .piste-arc { fill: none; stroke: rgba(255, 255, 255, .08); stroke-width: 14; stroke-linecap: round; }
+.jauge .arc { fill: none; stroke: url(#degrade); stroke-width: 14; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(255, 45, 135, .55)); transition: stroke-dasharray .12s linear; }
+.jauge .graduation { stroke: rgba(255, 255, 255, .22); stroke-width: 2; }
+.jauge .graduation.forte { stroke: rgba(255, 255, 255, .5); }
+.jauge .repere { fill: #fff; stroke: var(--fond); stroke-width: 3; transition: cx .12s linear, cy .12s linear; }
+.jauge-centre { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -58%); text-align: center; pointer-events: none; }
+.jauge-centre strong { display: block; font: 800 62px/1 var(--chiffres); font-variant-numeric: tabular-nums; }
+.jauge-centre span { color: var(--doux); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.cible { margin-top: -6px; color: var(--doux); font-size: 13px; }
+.cible b { color: var(--texte); font-variant-numeric: tabular-nums; }
+
+/* Télémétrie */
+.vitesse { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+.vitesse strong { font: 800 76px/.9 var(--chiffres); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.vitesse span { color: var(--doux); font: 600 16px var(--chiffres); }
+.rapport {
+  margin-left: auto; align-self: center;
+  min-width: 54px; height: 54px; display: grid; place-items: center;
+  border-radius: 14px; border: 2px solid var(--rose); color: var(--rose);
+  font: 800 30px/1 var(--chiffres); box-shadow: inset 0 0 18px rgba(255, 45, 135, .25);
+}
+.barre { margin-top: 14px; }
+.barre-tete { display: flex; justify-content: space-between; font-size: 13px; color: var(--doux); margin-bottom: 6px; }
+.barre-tete b { color: var(--texte); font-weight: 600; font-variant-numeric: tabular-nums; }
+.piste { position: relative; height: 10px; border-radius: 10px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.piste > div { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 10px; background: linear-gradient(90deg, var(--cyan), var(--rose)); transition: width .1s linear; }
+.piste > .zone-rupteur { left: 85%; right: 0; width: auto; background: repeating-linear-gradient(135deg, rgba(255, 84, 104, .35) 0 4px, transparent 4px 8px); border-radius: 0; }
+.piste > .frein { background: linear-gradient(90deg, #ff8a3d, var(--rouge)); }
+
+/* Courbe */
+#courbe { width: 100%; display: block; overflow: visible; }
+#courbe text { fill: var(--doux); font: 11px var(--chiffres); }
+#courbe .grille-l { stroke: rgba(255, 255, 255, .07); }
+#courbe .base { fill: none; stroke: url(#degrade-h); stroke-width: 3; stroke-linejoin: round; }
+#courbe .zone { fill: rgba(255, 45, 135, .14); }
+#courbe .menu { stroke: var(--ambre); stroke-dasharray: 5 5; stroke-width: 1.5; }
+#courbe .guide { stroke: rgba(255, 255, 255, .25); stroke-dasharray: 2 4; }
+#courbe .point { fill: #fff; filter: drop-shadow(0 0 6px var(--rose)); transition: cx .1s linear, cy .1s linear; }
+.legende { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 12px; color: var(--doux); }
+.legende span { display: inline-flex; align-items: center; gap: 6px; }
+.legende i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--cyan), var(--rose)); }
+.legende i.zone { height: 10px; background: rgba(255, 45, 135, .3); }
+.legende i.menu { background: none; border-top: 2px dashed var(--ambre); height: 0; }
+
+/* Réglages */
+.reglages { grid-column: 1 / -1; }
+.titre-ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.titre-ligne h2 { margin: 0; }
+.sauve { font-size: 12px; color: var(--vert); opacity: 0; transition: opacity .3s; }
+.sauve.visible { opacity: 1; }
+.sauve.erreur { color: var(--rouge); }
+.actions { display: flex; align-items: center; gap: 14px; }
+.bouton {
+  padding: 7px 14px; border-radius: 999px; border: 1px solid var(--bord);
+  background: var(--carte); color: var(--texte); font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+}
+.bouton:hover { border-color: rgba(255, 255, 255, .25); }
+.bouton.arme { border-color: var(--rose); color: var(--rose); background: rgba(255, 45, 135, .1); }
+h3 { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--doux); }
+.profils { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.profil {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; border-radius: 14px; border: 1px solid var(--bord);
+  background: rgba(255, 255, 255, .03); color: var(--texte); font: inherit; text-align: left;
+  cursor: pointer; transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.profil:hover { border-color: rgba(255, 255, 255, .22); }
+.profil b { display: block; font-size: 14px; }
+.profil small { display: block; margin-top: 2px; color: var(--doux); font-size: 12px; line-height: 1.3; }
+.profil svg { width: 60px; height: 24px; flex: none; }
+.profil polyline { fill: none; stroke: var(--doux); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.profil[aria-pressed=true] { border-color: var(--rose); background: rgba(255, 45, 135, .1); box-shadow: inset 0 0 0 1px var(--rose), 0 0 24px rgba(255, 45, 135, .15); }
+.profil[aria-pressed=true] polyline { stroke: var(--rose); }
+.bouton:focus-visible, .profil:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 28px; }
+.reglage-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.reglage label { font-weight: 600; font-size: 14px; }
+.reglage output { font: 700 15px var(--chiffres); font-variant-numeric: tabular-nums; color: var(--texte); }
+.reglage small { display: block; color: var(--doux); font-size: 12px; min-height: 17px; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 4px 0 0; background: transparent; cursor: pointer; --p: 50%; }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--cyan), var(--rose)) 0 0 / var(--p) 100% no-repeat, rgba(255, 255, 255, .1);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 0 4px rgba(255, 45, 135, .28), 0 2px 8px rgba(0, 0, 0, .5);
+}
+input[type=range]::-moz-range-track { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .1); }
+input[type=range]::-moz-range-progress { height: 6px; border-radius: 6px; background: linear-gradient(90deg, var(--cyan), var(--rose)); }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255, 45, 135, .28); }
+input[type=range]:focus-visible { outline: none; }
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--cyan); }
+input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--cyan); }
+
+.interrupteur { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600; }
+.interrupteur input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.interrupteur .glissiere { position: relative; width: 46px; height: 26px; border-radius: 26px; background: rgba(255, 255, 255, .14); transition: background .2s; flex: none; }
+.interrupteur .glissiere::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.interrupteur input:checked + .glissiere { background: linear-gradient(90deg, var(--cyan), var(--rose)); }
+.interrupteur input:checked + .glissiere::after { transform: translateX(20px); }
+.interrupteur input:focus-visible + .glissiere { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.port { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.port input {
+  width: 110px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--bord);
+  background: rgba(0, 0, 0, .3); color: var(--texte); font: 700 15px var(--chiffres);
+}
+.port input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+
+footer { margin-top: 18px; color: var(--doux); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+kbd { font: 600 12px var(--chiffres); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--bord); background: var(--carte); }
+
+@media (max-width: 980px) {
+  .grille { grid-template-columns: 280px minmax(0, 1fr); }
+  .courbe-carte { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  main { padding: 20px 16px 32px; }
+  .grille { grid-template-columns: minmax(0, 1fr); }
+  .vitesse strong { font-size: 64px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Apple Music <span>Horizon 6</span></h1>
+      <p class="sous">Forza Horizon 6 → Apple Music · la musique s'efface quand le moteur parle</p>
+    </div>
+    <div class="pastilles" aria-live="polite">
+      <span class="pastille" id="p-jeu"><i></i><span>Connexion…</span></span>
+      <span class="pastille" id="p-lecteur"><i></i><span>Apple Music</span></span>
+    </div>
+  </header>
+
+  <section class="grille">
+    <article class="carte jauge-carte" aria-label="Volume d'Apple Music">
+      <svg class="jauge" viewBox="0 0 240 240" aria-hidden="true">
+        <defs>
+          <linearGradient id="degrade" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#2ad4ff"/><stop offset="1" stop-color="#ff2d87"/>
+          </linearGradient>
+        </defs>
+        <g id="graduations"></g>
+        <circle class="piste-arc" id="piste-arc" cx="120" cy="120" r="92" transform="rotate(135 120 120)"/>
+        <circle class="arc" id="arc" cx="120" cy="120" r="92" transform="rotate(135 120 120)"/>
+        <circle class="repere" id="repere" cx="120" cy="120" r="6"/>
+      </svg>
+      <div class="jauge-centre"><strong id="vol">--</strong><span>% Apple Music</span></div>
+      <div class="cible">cible <b id="cible">--</b> %</div>
+    </article>
+
+    <article class="carte">
+      <h2>Télémétrie</h2>
+      <div class="vitesse"><strong id="kmh">0</strong><span>km/h</span><div class="rapport" id="rapport">–</div></div>
+      <div class="barre">
+        <div class="barre-tete"><span>Régime</span><b id="rpm">0 tr/min</b></div>
+        <div class="piste"><div class="zone-rupteur"></div><div id="b-rpm"></div></div>
+      </div>
+      <div class="barre">
+        <div class="barre-tete"><span>Accélérateur</span><b id="gaz">0 %</b></div>
+        <div class="piste"><div id="b-gaz"></div></div>
+      </div>
+      <div class="barre">
+        <div class="barre-tete"><span>Frein</span><b id="frein">0 %</b></div>
+        <div class="piste"><div id="b-frein" class="frein"></div></div>
+      </div>
+    </article>
+
+    <article class="carte courbe-carte">
+      <h2>Volume selon la vitesse</h2>
+      <svg id="courbe" viewBox="0 0 420 200" role="img" aria-label="Courbe du volume d'Apple Music selon la vitesse"></svg>
+      <p class="legende">
+        <span><i></i>volume de base</span>
+        <span><i class="zone"></i>baisse max (gaz + rupteur)</span>
+        <span><i class="menu"></i>hors conduite</span>
+      </p>
+    </article>
+
+    <article class="carte reglages">
+      <div class="titre-ligne">
+        <h2>Réglages</h2>
+        <div class="actions">
+          <span class="sauve" id="sauve" role="status">Enregistré</span>
+          <button type="button" class="bouton" id="reset">↺ Réinitialiser</button>
+        </div>
+      </div>
+      <h3>Profils sonores</h3>
+      <div class="profils" id="profils" role="group" aria-label="Profils sonores"></div>
+      <h3>Réglage fin</h3>
+      <div class="champs" id="champs">
+        <div class="reglage">
+          <label class="interrupteur"><input type="checkbox" id="auto"><span class="glissiere"></span>Réglage automatique</label>
+          <small>Désactivé : Apple Music reste au volume « hors conduite »</small>
+        </div>
+        <div class="reglage">
+          <label class="interrupteur"><input type="checkbox" id="popup"><span class="glissiere"></span>Pop-up du morceau en jeu</label>
+          <small>Titre et jaquette 6 s à chaque nouveau morceau (FH6 en plein écran fenêtré)</small>
+        </div>
+      </div>
+      <div class="champs" style="margin-top:18px">
+        <div class="reglage">
+          <div class="reglage-tete"><label for="port">Port Data Out</label></div>
+          <div class="port"><input type="number" id="port" min="1024" max="65535" inputmode="numeric"></div>
+          <small>Dans FH6 : Paramètres → HUD et gameplay → Data Out activé, IP <b>127.0.0.1</b>, même port</small>
+        </div>
+      </div>
+    </article>
+  </section>
+  <footer>
+    <span>AppleMusicLink <b id="version"></b> · en quittant, Apple Music revient au volume « hors conduite »</span>
+    <button type="button" class="bouton" id="quitter">⏻ Quitter</button>
+  </footer>
+</main>
+
+<script>
+const CHAMPS = [
+  ["vol_menu", "Hors conduite", "Menus, pause, carte, photo", 0, 100, 1, v => `${v} %`],
+  ["vol_arret", "À l'arrêt", "Voiture immobile", 0, 100, 1, v => `${v} %`],
+  ["vol_rapide", "À pleine vitesse", "Volume quand tu es lancé", 0, 100, 1, v => `${v} %`],
+  ["vitesse_max", "Pleine vitesse à", "Au-delà, le volume ne baisse plus", 50, 500, 5, v => `${v} km/h`],
+  ["courbe", "Courbe de montée", "Douce : en %. Marquée : chaque km/h s'entend autant", 0, 1, 0.05,
+    v => +v === 0 ? "Douce" : +v === 1 ? "Marquée" : `${Math.round(v * 100)} %`],
+  ["baisse_rupteur", "Près du rupteur", "Baisse en plus au-delà de 85 % du régime", 0, 50, 1, v => `−${v} %`],
+  ["baisse_gaz", "À plein gaz", "Proportionnelle à l'accélérateur", 0, 50, 1, v => `−${v} %`],
+  ["lissage", "Douceur", "Temps de transition du volume", 0.05, 3, 0.05, v => `${(+v).toFixed(2)} s`],
+];
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+let reglages = null, defauts = null;
+
+// --- Jauge : arc de 270° ---
+const R = 92, CIRC = 2 * Math.PI * R, ARC = CIRC * 0.75;
+$("piste-arc").setAttribute("stroke-dasharray", `${ARC} ${CIRC}`);
+function pointArc(f, r = R) {
+  const a = (135 + 270 * f) * Math.PI / 180;
+  return [120 + r * Math.cos(a), 120 + r * Math.sin(a)];
+}
+for (let i = 0; i <= 20; i++) {
+  const [x1, y1] = pointArc(i / 20, 112), [x2, y2] = pointArc(i / 20, i % 5 ? 108 : 104);
+  const l = document.createElementNS(NS, "line");
+  Object.entries({ x1, y1, x2, y2, class: i % 5 ? "graduation" : "graduation forte" }).forEach(([k, v]) => l.setAttribute(k, v));
+  $("graduations").append(l);
+}
+function jauge(volume, cible) {
+  $("arc").setAttribute("stroke-dasharray", `${ARC * volume / 100} ${CIRC}`);
+  const [x, y] = pointArc(cible / 100);
+  $("repere").setAttribute("cx", x);
+  $("repere").setAttribute("cy", y);
+}
+
+// --- Courbe volume / vitesse ---
+const G = 36, D = 10, H = 10, B = 26, W = 420, HT = 200;
+let echelleX = 300;
+const px = k => G + Math.min(k, echelleX) / echelleX * (W - G - D);
+const py = v => H + (1 - v / 100) * (HT - H - B);
+function el(nom, attrs, texte) {
+  const e = document.createElementNS(NS, nom);
+  Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+  if (texte !== undefined) e.textContent = texte;
+  return e;
+}
+function dessinerCourbe() {
+  const s = reglages, svg = $("courbe");
+  echelleX = Math.max(100, Math.ceil(s.vitesse_max * 1.25 / 50) * 50);
+  svg.replaceChildren(el("defs", {}));
+  svg.firstChild.innerHTML = '<linearGradient id="degrade-h" x1="0" x2="1"><stop offset="0" stop-color="#2ad4ff"/><stop offset="1" stop-color="#ff2d87"/></linearGradient>';
+  for (const v of [0, 25, 50, 75, 100]) {
+    svg.append(el("line", { class: "grille-l", x1: G, x2: W - D, y1: py(v), y2: py(v) }));
+    svg.append(el("text", { x: G - 8, y: py(v) + 4, "text-anchor": "end" }, `${v}`));
+  }
+  const pas = echelleX > 300 ? 100 : 50;
+  for (let k = 0; k <= echelleX; k += pas) svg.append(el("text", { x: px(k), y: HT - 6, "text-anchor": "middle" }, k));
+  const base = [...Array(25).keys()].map(i => s.vitesse_max * i / 24).concat(echelleX).map(k => [k, volumeBase(k)]);
+  const baisse = s.baisse_rupteur + s.baisse_gaz;
+  const zone = [...base, ...base.slice().reverse().map(([k, v]) => [k, Math.max(0, v - baisse)])];
+  svg.append(el("polygon", { class: "zone", points: zone.map(([k, v]) => `${px(k)},${py(v)}`).join(" ") }));
+  svg.append(el("line", { class: "menu", x1: G, x2: W - D, y1: py(s.vol_menu), y2: py(s.vol_menu) }));
+  svg.append(el("polyline", { class: "base", points: base.map(([k, v]) => `${px(k)},${py(v)}`).join(" ") }));
+  svg.append(el("line", { class: "guide", id: "guide", x1: px(0), x2: px(0), y1: H, y2: HT - B }));
+  svg.append(el("circle", { class: "point", id: "point", r: 6, cx: px(0), cy: py(s.vol_menu) }));
+}
+
+// --- Réglages ---
+const zoneChamps = $("champs");
+for (const [cle, nom, aide, min, max, pas] of CHAMPS) {
+  const d = document.createElement("div");
+  d.className = "reglage";
+  d.innerHTML = `<div class="reglage-tete"><label for="${cle}">${nom}</label><output id="o-${cle}" for="${cle}"></output></div>
+    <input type="range" id="${cle}" min="${min}" max="${max}" step="${pas}"><small>${aide}</small>`;
+  zoneChamps.append(d);
+}
+function afficherReglage(cle) {
+  const c = CHAMPS.find(c => c[0] === cle), input = $(cle);
+  input.style.setProperty("--p", `${(input.value - c[3]) / (c[4] - c[3]) * 100}%`);
+  $(`o-${cle}`).textContent = c[6](input.value);
+}
+function volumeBase(k) {  // même calcul que volume_cible côté Python, sans les baisses
+  const s = reglages, a = s.vol_arret, b = s.vol_rapide, x = Math.min(k / s.vitesse_max, 1);
+  const lin = a + (b - a) * x, a1 = Math.max(a, 1), b1 = Math.max(b, 1);
+  return lin + s.courbe * (a1 * (b1 / a1) ** x - lin);
+}
+function remplir() {
+  for (const [cle] of CHAMPS) { $(cle).value = reglages[cle]; afficherReglage(cle); }
+  $("auto").checked = reglages.auto;
+  $("popup").checked = reglages.popup;
+  $("port").value = reglages.port;
+  dessinerCourbe();
+  marquerProfil();
+}
+function marquerProfil() {
+  for (const b of $("profils").children)
+    b.setAttribute("aria-pressed", Object.entries(b.profil).every(([k, v]) => Math.abs(reglages[k] - v) < 1e-6));
+}
+function creerProfils(liste) {
+  const y = v => 22 - v / 100 * 20;
+  for (const p of liste) {
+    const r = p.reglages, b = document.createElement("button");
+    b.type = "button";
+    b.className = "profil";
+    b.profil = r;
+    b.innerHTML = `<span><b>${p.nom}</b><small>${p.aide}</small></span>
+      <svg viewBox="0 0 60 24" aria-hidden="true"><polyline points="2,${y(r.vol_arret)} 40,${y(r.vol_rapide)} 58,${y(r.vol_rapide)}"/></svg>`;
+    b.addEventListener("click", () => appliquer(r));
+    $("profils").append(b);
+  }
+}
+function appliquer(valeurs) {
+  Object.assign(reglages, valeurs);
+  remplir();
+  envoyer(valeurs);
+}
+let minuterie, enAttente = {};
+function envoyer(modif) {
+  Object.assign(enAttente, modif);
+  clearTimeout(minuterie);
+  minuterie = setTimeout(async () => {
+    const corps = enAttente; enAttente = {};
+    const sauve = $("sauve");
+    try {
+      const r = await fetch("/reglages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) });
+      const rep = await r.json();
+      if (!r.ok) throw new Error(rep.erreur || "Refusé");
+      reglages = rep;
+      sauve.textContent = "Enregistré";
+      sauve.className = "sauve visible";
+    } catch (e) {
+      sauve.textContent = e.message;
+      sauve.className = "sauve visible erreur";
+      remplir();
+    }
+    clearTimeout(sauve.t);
+    sauve.t = setTimeout(() => sauve.classList.remove("visible"), 2200);
+  }, 250);
+}
+for (const [cle] of CHAMPS) {
+  $(cle).addEventListener("input", e => {
+    afficherReglage(cle);
+    reglages[cle] = +e.target.value;
+    dessinerCourbe();
+    marquerProfil();
+    envoyer({ [cle]: +e.target.value });
+  });
+}
+$("quitter").addEventListener("click", async () => {
+  await fetch("/quitter", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
+  $("quitter").disabled = true;
+  $("quitter").textContent = "Arrêté";
+});
+$("reset").addEventListener("click", e => {
+  const b = e.currentTarget, armer = !b.classList.contains("arme");
+  clearTimeout(b.t);
+  b.classList.toggle("arme", armer);
+  b.textContent = armer ? "Confirmer ?" : "↺ Réinitialiser";
+  if (armer) b.t = setTimeout(() => { b.classList.remove("arme"); b.textContent = "↺ Réinitialiser"; }, 3000);
+  else appliquer(defauts);
+});
+$("auto").addEventListener("change", e => { reglages.auto = e.target.checked; envoyer({ auto: e.target.checked }); });
+$("popup").addEventListener("change", e => { reglages.popup = e.target.checked; envoyer({ popup: e.target.checked }); });
+$("port").addEventListener("change", e => envoyer({ port: +e.target.value }));
+
+// --- État en direct ---
+function pastille(id, classe, texte) {
+  $(id).className = `pastille ${classe}`;
+  $(id).lastElementChild.textContent = texte;
+}
+async function rafraichir() {
+  try {
+    const e = await (await fetch("/etat")).json();
+    if (!e.port) return;
+    if (e.erreur) pastille("p-jeu", "ko", e.erreur);
+    else if (e.course) pastille("p-jeu", "ok", "En conduite");
+    else if (e.recoit) pastille("p-jeu", "attente", "Hors course");
+    else pastille("p-jeu", "attente", `En attente du jeu · port ${e.port}`);
+    pastille("p-lecteur", e.lecteur ? "ok" : "ko", e.lecteur ? "Apple Music piloté" : "Apple Music : aucun son détecté");
+    $("vol").textContent = Math.round(e.volume);
+    $("cible").textContent = Math.round(e.cible);
+    jauge(e.volume, e.cible);
+    $("kmh").textContent = Math.round(e.kmh);
+    $("rapport").textContent = e.rapport === null ? "–" : e.rapport === 0 ? "R" : e.rapport;
+    const ratio = e.rpm_max > 0 ? e.rpm / e.rpm_max : 0;
+    $("rpm").textContent = `${Math.round(e.rpm).toLocaleString("fr-FR")} tr/min`;
+    $("b-rpm").style.width = `${Math.min(ratio, 1) * 100}%`;
+    $("gaz").textContent = `${Math.round(e.gaz * 100)} %`;
+    $("b-gaz").style.width = `${e.gaz * 100}%`;
+    $("frein").textContent = `${Math.round(e.frein * 100)} %`;
+    $("b-frein").style.width = `${e.frein * 100}%`;
+    if ($("point")) {
+      $("point").setAttribute("cx", px(e.kmh));
+      $("point").setAttribute("cy", py(e.volume));
+      $("guide").setAttribute("x1", px(e.kmh));
+      $("guide").setAttribute("x2", px(e.kmh));
+    }
+  } catch {
+    pastille("p-jeu", "ko", "Programme arrêté");
+    pastille("p-lecteur", "", "Apple Music");
+  }
+}
+
+(async () => {
+  const [r, p] = await Promise.all(["/reglages", "/presets"].map(async u => (await fetch(u)).json()));
+  reglages = r;
+  defauts = p.defauts;
+  $("version").textContent = p.version;
+  creerProfils(p.presets);
+  remplir();
+  setInterval(rafraichir, 100);
+})();
+</script>
+</body>
+</html>
