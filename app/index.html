@@ -91,6 +91,34 @@ h2 { margin: 0 0 14px; font: 700 13px/1 var(--chiffres); letter-spacing: .14em; 
 .piste > .zone-rupteur { left: 85%; right: 0; width: auto; background: repeating-linear-gradient(135deg, rgba(255, 84, 104, .35) 0 4px, transparent 4px 8px); border-radius: 0; }
 .piste > .frein { background: linear-gradient(90deg, #ff8a3d, var(--rouge)); }
 
+/* Télémétrie avancée */
+.bouton.petit { padding: 5px 12px; font-size: 12px; }
+.carte.avancee { grid-column: 1 / -1; }
+.carte.avancee[hidden] { display: none; }
+.blocs { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.bloc { background: rgba(255, 255, 255, .03); border: 1px solid var(--bord); border-radius: 14px; padding: 14px; }
+.bloc .barre:first-of-type { margin-top: 0; }
+.valeurs { margin: 0; display: grid; gap: 7px; }
+.valeurs div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; }
+.valeurs dt { color: var(--doux); }
+.valeurs dd { margin: 0; font: 700 15px var(--chiffres); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gmetre-ligne { display: flex; align-items: center; gap: 14px; }
+.gmetre-ligne .valeurs { flex: 1; }
+.gmetre { width: 96px; height: 96px; flex: none; }
+.g-cercle { fill: none; stroke: rgba(255, 255, 255, .12); }
+.g-axe { stroke: rgba(255, 255, 255, .12); }
+.g-point { fill: var(--rose); filter: drop-shadow(0 0 6px var(--rose)); transition: cx .1s linear, cy .1s linear; }
+.pneus { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 22px; padding: 0 6px; }
+.pneu { border-radius: 10px; border: 2px solid var(--doux); background: rgba(157, 155, 180, .15); text-align: center; padding: 7px 4px; transition: background .2s, border-color .2s; }
+.pneu b { display: block; font: 800 18px/1.15 var(--chiffres); font-variant-numeric: tabular-nums; }
+.pneu small { color: var(--doux); font-size: 11px; }
+.aide-bloc { display: block; margin-top: 8px; color: var(--doux); font-size: 11px; }
+.suspensions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+.susp-piste { position: relative; height: 72px; width: 12px; margin: 0 auto 6px; border-radius: 8px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.susp-piste > div { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(0deg, var(--cyan), var(--rose)); transition: height .1s linear; }
+.suspensions span { font-size: 11px; color: var(--doux); }
+.piste.centre::after { content: ""; position: absolute; left: calc(50% - 1px); top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, .35); }
+
 /* Courbe */
 #courbe { width: 100%; display: block; overflow: visible; }
 #courbe text { fill: var(--doux); font: 11px var(--chiffres); }
@@ -219,7 +247,10 @@ kbd { font: 600 12px var(--chiffres); padding: 1px 6px; border-radius: 6px; bord
     </article>
 
     <article class="carte">
-      <h2>Télémétrie</h2>
+      <div class="titre-ligne">
+        <h2>Télémétrie</h2>
+        <button type="button" class="bouton petit" id="plus" aria-expanded="false" aria-controls="avancee">＋ Plus de données</button>
+      </div>
       <div class="vitesse"><strong id="kmh">0</strong><span>km/h</span><div class="rapport" id="rapport">–</div></div>
       <div class="barre">
         <div class="barre-tete"><span>Régime</span><b id="rpm">0 tr/min</b></div>
@@ -243,6 +274,68 @@ kbd { font: 600 12px var(--chiffres); padding: 1px 6px; border-radius: 6px; bord
         <span><i class="zone"></i>baisse max (gaz + rupteur)</span>
         <span><i class="menu"></i>hors conduite</span>
       </p>
+    </article>
+
+    <article class="carte avancee" id="avancee" hidden>
+      <h2>Télémétrie avancée</h2>
+      <div class="blocs">
+        <section class="bloc">
+          <h3>Moteur</h3>
+          <dl class="valeurs">
+            <div><dt>Puissance</dt><dd id="av-ch">–</dd></div>
+            <div><dt>Couple</dt><dd id="av-couple">–</dd></div>
+            <div><dt>Turbo</dt><dd id="av-turbo">–</dd></div>
+          </dl>
+        </section>
+        <section class="bloc">
+          <h3>Forces G</h3>
+          <div class="gmetre-ligne">
+            <svg class="gmetre" viewBox="-60 -60 120 120" aria-hidden="true">
+              <circle r="56" class="g-cercle"/><circle r="37" class="g-cercle"/><circle r="18" class="g-cercle"/>
+              <line x1="-56" x2="56" class="g-axe"/><line y1="-56" y2="56" class="g-axe"/>
+              <circle id="g-point" r="6" class="g-point"/>
+            </svg>
+            <dl class="valeurs">
+              <div><dt>Latérale</dt><dd id="av-glat">–</dd></div>
+              <div><dt>Avant / arrière</dt><dd id="av-glong">–</dd></div>
+            </dl>
+          </div>
+        </section>
+        <section class="bloc">
+          <h3>Pneus</h3>
+          <div class="pneus" id="pneus"></div>
+          <small class="aide-bloc">Couleur : adhérence (vert) → glisse (rouge)</small>
+        </section>
+        <section class="bloc">
+          <h3>Suspensions</h3>
+          <div class="suspensions" id="suspensions"></div>
+        </section>
+        <section class="bloc">
+          <h3>Commandes</h3>
+          <div class="barre"><div class="barre-tete"><span>Embrayage</span></div><div class="piste"><div id="b-embrayage"></div></div></div>
+          <div class="barre"><div class="barre-tete"><span>Frein à main</span></div><div class="piste"><div id="b-frein-main" class="frein"></div></div></div>
+          <div class="barre"><div class="barre-tete"><span>Direction</span></div><div class="piste centre"><div id="b-direction"></div></div></div>
+        </section>
+        <section class="bloc">
+          <h3>Course</h3>
+          <dl class="valeurs">
+            <div><dt>Position</dt><dd id="av-position">–</dd></div>
+            <div><dt>Tour</dt><dd id="av-tour">–</dd></div>
+            <div><dt>Tour en cours</dt><dd id="av-tour-actuel">–</dd></div>
+            <div><dt>Dernier tour</dt><dd id="av-dernier">–</dd></div>
+            <div><dt>Meilleur tour</dt><dd id="av-meilleur">–</dd></div>
+          </dl>
+        </section>
+        <section class="bloc">
+          <h3>Voiture</h3>
+          <dl class="valeurs">
+            <div><dt>Indice (IP)</dt><dd id="av-ip">–</dd></div>
+            <div><dt>Transmission</dt><dd id="av-transmission">–</dd></div>
+            <div><dt>Cylindres</dt><dd id="av-cylindres">–</dd></div>
+            <div><dt>Distance</dt><dd id="av-distance">–</dd></div>
+          </dl>
+        </section>
+      </div>
     </article>
 
     <article class="carte reglages">
@@ -276,7 +369,7 @@ kbd { font: 600 12px var(--chiffres); padding: 1px 6px; border-radius: 6px; bord
     </article>
   </section>
   <footer>
-    <span>AppleMusicLink <b id="version"></b> · en quittant, Apple Music revient au volume « hors conduite »</span>
+    <span>AppleMusicLink <b id="version"></b> · fermer cette page ne l'arrête pas : quitte ici ou par l'icône près de l'horloge</span>
     <button type="button" class="bouton" id="quitter">⏻ Quitter</button>
   </footer>
 </main>
@@ -447,6 +540,57 @@ $("auto").addEventListener("change", e => { reglages.auto = e.target.checked; en
 $("popup").addEventListener("change", e => { reglages.popup = e.target.checked; envoyer({ popup: e.target.checked }); });
 $("port").addEventListener("change", e => envoyer({ port: +e.target.value }));
 
+// --- Télémétrie avancée (repliable, choix gardé par le navigateur) ---
+const ROUES = ["AVG", "AVD", "ARG", "ARD"];
+ROUES.forEach((r, i) => {
+  $("pneus").insertAdjacentHTML("beforeend", `<div class="pneu" id="pneu-${i}"><b>–</b><small>${r} · °C</small></div>`);
+  $("suspensions").insertAdjacentHTML("beforeend", `<div><div class="susp-piste"><div id="susp-${i}"></div></div><span>${r}</span></div>`);
+});
+function basculerAvancee(ouvert) {
+  $("avancee").hidden = !ouvert;
+  $("plus").setAttribute("aria-expanded", ouvert);
+  $("plus").textContent = ouvert ? "− Moins de données" : "＋ Plus de données";
+  try { localStorage.setItem("aml-avancee", ouvert ? "1" : "0"); } catch {}
+}
+$("plus").addEventListener("click", () => basculerAvancee($("avancee").hidden));
+try { basculerAvancee(localStorage.getItem("aml-avancee") === "1"); } catch { basculerAvancee(false); }
+
+const melange = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+const couleurGlisse = s => s < 1 ? melange([62, 224, 143], [255, 181, 61], s) : melange([255, 181, 61], [255, 84, 104], Math.min(s - 1, 1));
+const chrono = s => s > 0 ? `${Math.floor(s / 60)}:${(s % 60).toFixed(3).padStart(6, "0")}` : "–";
+function avancee(e) {
+  const ok = e.recoit, ecrire = (id, v) => { $(id).textContent = ok ? v : "–"; };
+  ecrire("av-ch", `${e.ch} ch`);
+  ecrire("av-couple", `${e.couple} N·m`);
+  ecrire("av-turbo", `${e.turbo.toFixed(2)} bar`);
+  ecrire("av-glat", `${e.g_lat.toFixed(2)} g`);
+  ecrire("av-glong", `${e.g_long.toFixed(2)} g`);
+  const g = v => ok ? Math.max(-56, Math.min(56, v * 37)) : 0;  // 1 g = cercle du milieu
+  $("g-point").setAttribute("cx", g(e.g_lat));
+  $("g-point").setAttribute("cy", -g(e.g_long));
+  ROUES.forEach((_, i) => {
+    const c = ok ? couleurGlisse(Math.max(0, e.glisse[i])) : [157, 155, 180], p = $(`pneu-${i}`);
+    p.style.borderColor = `rgb(${c})`;
+    p.style.background = `rgba(${c}, .15)`;
+    p.firstElementChild.textContent = ok ? e.pneus_c[i] : "–";
+    $(`susp-${i}`).style.height = `${ok ? e.suspension[i] * 100 : 0}%`;
+  });
+  $("b-embrayage").style.width = `${ok ? e.embrayage * 100 : 0}%`;
+  $("b-frein-main").style.width = `${ok ? e.frein_main * 100 : 0}%`;
+  const d = ok ? e.direction : 0;
+  $("b-direction").style.left = `${50 + Math.min(d, 0) * 50}%`;
+  $("b-direction").style.width = `${Math.abs(d) * 50}%`;
+  ecrire("av-position", e.position === 1 ? "1er" : e.position ? `${e.position}e` : "–");
+  ecrire("av-tour", e.position ? e.tour + 1 : "–");
+  ecrire("av-tour-actuel", chrono(e.tour_actuel));
+  ecrire("av-dernier", chrono(e.dernier_tour));
+  ecrire("av-meilleur", chrono(e.meilleur_tour));
+  ecrire("av-ip", e.ip || "–");
+  ecrire("av-transmission", ["Traction", "Propulsion", "Intégrale"][e.transmission] ?? "–");
+  ecrire("av-cylindres", e.cylindres || "–");
+  ecrire("av-distance", `${e.distance_km.toFixed(1)} km`);
+}
+
 // --- État en direct ---
 function pastille(id, classe, texte) {
   $(id).className = `pastille ${classe}`;
@@ -460,7 +604,7 @@ async function rafraichir() {
     else if (e.course) pastille("p-jeu", "ok", "En conduite");
     else if (e.recoit) pastille("p-jeu", "attente", "Hors course");
     else pastille("p-jeu", "attente", `En attente du jeu · port ${e.port}`);
-    pastille("p-lecteur", e.lecteur ? "ok" : "ko", e.lecteur ? "Apple Music piloté" : "Apple Music : aucun son détecté");
+    pastille("p-lecteur", e.lecteur ? "ok" : "ko", e.lecteur ? "Apple Music connecté" : "Apple Music : aucun son détecté");
     $("vol").textContent = Math.round(e.volume);
     $("cible").textContent = Math.round(e.cible);
     jauge(e.volume, e.cible);
@@ -473,6 +617,7 @@ async function rafraichir() {
     $("b-gaz").style.width = `${e.gaz * 100}%`;
     $("frein").textContent = `${Math.round(e.frein * 100)} %`;
     $("b-frein").style.width = `${e.frein * 100}%`;
+    if (!$("avancee").hidden) avancee(e);
     if ($("point")) {
       $("point").setAttribute("cx", px(e.kmh));
       $("point").setAttribute("cy", py(e.volume));

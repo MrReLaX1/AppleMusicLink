@@ -29,7 +29,8 @@ Pour voir la carte du morceau par-dessus le jeu, mets FH6 en **plein écran fen�
 
 - Mode par défaut (« Équilibré ») : 20 % à l'arrêt, 100 % à 190 km/h, courbe « Marquée » (la montée s'entend de façon régulière), 20 % dans les menus et en pause.
 - Tous les réglages se changent dans l'interface et sont gardés d'un lancement à l'autre.
-- Pour arrêter : bouton **Quitter**, en bas de l'interface. Apple Music revient au volume « hors conduite ».
+- Tant que l'appli tourne, son **icône** est près de l'horloge (dans la flèche ^ si Windows la range). Un clic ouvre l'interface ; un clic droit donne **Ouvrir** et **Quitter**.
+- Fermer la page du navigateur n'arrête pas l'appli : elle doit tourner pendant que tu joues. Pour l'arrêter, utilise **Quitter**, depuis l'icône ou en bas de l'interface. Apple Music revient alors au volume « hors conduite ».
 
 ## Mises à jour automatiques
 

@@ -11,7 +11,9 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import pystray
 from comtypes import COMError
+from PIL import Image
 from pycaw.pycaw import AudioUtilities
 
 import popup
@@ -27,6 +29,25 @@ PORT_WEB = 8766  # 8765 est pris par la version pour l'autre lecteur
 ADRESSE = f"http://127.0.0.1:{PORT_WEB}"
 HOTES = {f"127.0.0.1:{PORT_WEB}", f"localhost:{PORT_WEB}"}
 TAILLE_PAQUET = 324  # format FH6 fixe (doc Forza « Data Out »)
+ROUES = ("FrontLeft", "FrontRight", "RearLeft", "RearRight")
+CHAMPS_FH6 = (  # dans l'ordre de la doc Forza, noms d'origine
+    [("IsRaceOn", "i"), ("TimestampMS", "I"), ("EngineMaxRpm", "f"), ("EngineIdleRpm", "f"), ("CurrentEngineRpm", "f")]
+    + [(n + a, "f") for n in ("Acceleration", "Velocity", "AngularVelocity") for a in "XYZ"]
+    + [("Yaw", "f"), ("Pitch", "f"), ("Roll", "f")]
+    + [(n + r, t) for n, t in (("NormalizedSuspensionTravel", "f"), ("TireSlipRatio", "f"), ("WheelRotationSpeed", "f"),
+                                ("WheelOnRumbleStrip", "i"), ("WheelInPuddle", "i"), ("SurfaceRumble", "f"),
+                                ("TireSlipAngle", "f"), ("TireCombinedSlip", "f"), ("SuspensionTravelMeters", "f"))
+       for r in ROUES]
+    + [("CarOrdinal", "i"), ("CarClass", "i"), ("CarPerformanceIndex", "i"), ("DrivetrainType", "i"), ("NumCylinders", "i"),
+       ("CarGroup", "I"), ("SmashableVelDiff", "f"), ("SmashableMass", "f"), ("PositionX", "f"), ("PositionY", "f"),
+       ("PositionZ", "f"), ("Speed", "f"), ("Power", "f"), ("Torque", "f")]
+    + [("TireTemp" + r, "f") for r in ROUES]
+    + [("Boost", "f"), ("Fuel", "f"), ("DistanceTraveled", "f"), ("BestLap", "f"), ("LastLap", "f"), ("CurrentLap", "f"),
+       ("CurrentRaceTime", "f"), ("LapNumber", "H"), ("RacePosition", "B"), ("Accel", "B"), ("Brake", "B"), ("Clutch", "B"),
+       ("HandBrake", "B"), ("Gear", "B"), ("Steer", "b"), ("NormalizedDrivingLine", "b"), ("NormalizedAIBrakeDifference", "b")]
+)
+FORMAT_FH6 = "<" + "".join(t for _, t in CHAMPS_FH6) + "x"  # un octet de bourrage final
+assert struct.calcsize(FORMAT_FH6) == TAILLE_PAQUET
 SILENCE = 0.5  # FH6 n'envoie rien en menu, pause ou rembobinage
 
 DEFAUTS = {
@@ -65,7 +86,7 @@ PRESETS = [
     {"nom": "Course", "aide": "Réactif, musique très basse à fond",
      "reglages": {"vol_menu": 100, "vol_arret": 50, "vol_rapide": 10, "vitesse_max": 180,
                   "baisse_rupteur": 25, "baisse_gaz": 20, "lissage": 0.25, "courbe": 0}},
-    {"nom": "Balade", "aide": "Transitions lentes, pour cruiser",
+    {"nom": "Balade", "aide": "Transitions lentes, pour rouler tranquille",
      "reglages": {"vol_menu": 100, "vol_arret": 90, "vol_rapide": 60, "vitesse_max": 250,
                   "baisse_rupteur": 0, "baisse_gaz": 5, "lissage": 1.5, "courbe": 0}},
 ]
@@ -99,18 +120,37 @@ def charger():
 def lire_paquet(p):
     if len(p) != TAILLE_PAQUET:
         return None
-    course, _, rpm_max, _, rpm = struct.unpack_from("<iIfff", p, 0)
-    (vitesse,) = struct.unpack_from("<f", p, 256)
-    gaz, frein, _, _, rapport = struct.unpack_from("<5B", p, 315)
-    fini = lambda x: x if math.isfinite(x) else 0.0
+    d = {nom: (v if not isinstance(v, float) or math.isfinite(v) else 0.0)
+         for (nom, _), v in zip(CHAMPS_FH6, struct.unpack(FORMAT_FH6, p))}
     return {
-        "course": course == 1,
-        "kmh": max(fini(vitesse), 0.0) * 3.6,
-        "rpm": fini(rpm),
-        "rpm_max": fini(rpm_max),
-        "gaz": gaz / 255,
-        "frein": frein / 255,
-        "rapport": rapport,
+        "course": d["IsRaceOn"] == 1,
+        "kmh": max(d["Speed"], 0.0) * 3.6,
+        "rpm": d["CurrentEngineRpm"],
+        "rpm_max": d["EngineMaxRpm"],
+        "gaz": d["Accel"] / 255,
+        "frein": d["Brake"] / 255,
+        "rapport": d["Gear"],
+        # télémétrie avancée, affichée seulement si on la déplie dans l'interface
+        "ch": round(max(d["Power"], 0) / 735.5),  # W → ch
+        "couple": round(max(d["Torque"], 0)),
+        "turbo": round(max(d["Boost"], 0) * 0.0689476, 2),  # PSI → bar
+        "g_lat": round(d["AccelerationX"] / 9.81, 2),
+        "g_long": round(d["AccelerationZ"] / 9.81, 2),
+        "pneus_c": [round((d["TireTemp" + r] - 32) / 1.8) for r in ROUES],  # en °F comme dans FH4/FH5
+        "glisse": [round(d["TireCombinedSlip" + r], 2) for r in ROUES],
+        "suspension": [round(borner(d["NormalizedSuspensionTravel" + r]), 2) for r in ROUES],
+        "ip": d["CarPerformanceIndex"],
+        "transmission": d["DrivetrainType"],
+        "cylindres": d["NumCylinders"],
+        "position": d["RacePosition"],
+        "tour": d["LapNumber"],
+        "tour_actuel": round(d["CurrentLap"], 3),
+        "dernier_tour": round(d["LastLap"], 3),
+        "meilleur_tour": round(d["BestLap"], 3),
+        "distance_km": round(max(d["DistanceTraveled"], 0) / 1000, 2),
+        "embrayage": d["Clutch"] / 255,
+        "frein_main": d["HandBrake"] / 255,
+        "direction": round(d["Steer"] / 127, 2),
     }
 
 
@@ -198,7 +238,7 @@ def boucle():
         cible = volume_cible(actif, s)
         volume += (cible - volume) * (1 - math.exp(-dt / s["lissage"]))
         trouve = lecteur.regler(volume)
-        t = actif or {"course": False, "kmh": 0, "rpm": 0, "rpm_max": 0, "gaz": 0, "frein": 0, "rapport": None}
+        t = actif or {**lire_paquet(bytes(TAILLE_PAQUET)), "rapport": None}
         etat = {**t, "recoit": actif is not None, "volume": round(volume * 100, 1),
                 "cible": round(cible * 100, 1), "lecteur": trouve, "erreur": erreur, "port": port}
     lecteur.applique = None
@@ -258,6 +298,13 @@ class Page(BaseHTTPRequestHandler):
         pass
 
 
+def creer_icone():
+    """Icône près de l'horloge, présente tant que l'appli tourne : clic = Ouvrir, clic droit = Ouvrir / Quitter."""
+    menu = pystray.Menu(pystray.MenuItem("Ouvrir", lambda: webbrowser.open(ADRESSE), default=True),
+                        pystray.MenuItem("Quitter", arret.set))
+    return pystray.Icon("AppleMusicLink", Image.open(ICI / "icone.png"), f"AppleMusicLink {VERSION} : en marche", menu)
+
+
 @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_uint)
 def fermeture(_evenement):
     """Ctrl+C ou fenêtre fermée : on laisse la boucle remettre Apple Music au volume hors conduite."""
@@ -275,12 +322,17 @@ if __name__ == "__main__":
         raise SystemExit("Déjà lancé : interface ouverte dans le navigateur.")
     threading.Thread(target=serveur.serve_forever, daemon=True).start()
     threading.Thread(target=popup.lancer, args=(lambda: reglages["popup"],), daemon=True).start()
+    icone = creer_icone()
+    fil_icone = threading.Thread(target=icone.run, daemon=True)
+    fil_icone.start()
     ctypes.windll.kernel32.SetConsoleCtrlHandler(fermeture, True)
     print(f"Interface : {ADRESSE}")
     print(f"Dans FH6 : Data Out = Activé, IP 127.0.0.1, port {reglages['port']}")
-    print("Pour arrêter : bouton Quitter de l'interface (Apple Music revient au volume hors conduite).")
+    print("Pour arrêter : bouton Quitter de l'interface ou de l'icône près de l'horloge.")
     webbrowser.open(ADRESSE)
     try:
         boucle()
     finally:
+        icone.stop()
+        fil_icone.join(2)  # laisse l'icône se retirer, sinon une icône fantôme reste près de l'horloge
         fini.set()

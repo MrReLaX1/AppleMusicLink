@@ -19,6 +19,19 @@ def paquet(course=1, kmh=0.0, rpm=0.0, rpm_max=8000.0, gaz=0):
 assert lire_paquet(b"\0" * 311) is None
 t = lire_paquet(paquet(kmh=250, rpm=7600, gaz=255))
 assert abs(t["kmh"] - 250) < 0.01 and t["gaz"] == 1
+# télémétrie avancée : valeurs posées aux positions absolues de la doc Forza, indépendamment du format
+p = bytearray(paquet(kmh=100))
+struct.pack_into("<f", p, 20, 9.81)       # AccelerationX → 1 g latéral
+struct.pack_into("<f", p, 180, 1.5)       # TireCombinedSlipFrontLeft
+struct.pack_into("<i", p, 220, 812)       # CarPerformanceIndex
+struct.pack_into("<f", p, 260, 300000.0)  # Power : 300 kW
+struct.pack_into("<f", p, 268, 212.0)     # TireTempFrontLeft : 212 °F
+struct.pack_into("<f", p, 284, 14.5)      # Boost : 14,5 PSI
+struct.pack_into("<f", p, 296, 83.456)    # BestLap
+p[314], p[317], p[320] = 3, 255, 0x81     # RacePosition, Clutch, Steer = −127
+a = lire_paquet(bytes(p))
+assert (a["g_lat"], a["glisse"][0], a["ip"], a["ch"], a["pneus_c"][0], a["turbo"], a["meilleur_tour"],
+        a["position"], a["embrayage"], a["direction"], round(a["kmh"])) == (1.0, 1.5, 812, 408, 100, 1.0, 83.456, 3, 1.0, -1.0, 100), a
 assert volume_cible(None, baisse) == 1.0
 assert volume_cible(lire_paquet(paquet(course=0, kmh=100)), baisse) == 1.0
 assert abs(volume_cible(lire_paquet(paquet()), baisse) - 0.80) < 1e-6
